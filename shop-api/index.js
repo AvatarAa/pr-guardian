@@ -70,6 +70,10 @@ app.get("/orders", (req, res) => {
   res.json(orders);
 });
 
-app.listen(PORT, () => {
-  console.log(`Shop API running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Shop API running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
