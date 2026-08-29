@@ -1,7 +1,7 @@
 {
   "name": "shop-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sample Shop API for PRI-MO pull request analysis",
   "main": "index.js",
   "scripts": {
     "test": "jest"
