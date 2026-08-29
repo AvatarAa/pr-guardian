@@ -38,9 +38,9 @@ app.get("/products", (req, res) => {
 app.post("/orders", (req, res) => {
   const { productId, quantity } = req.body;
 
-  if (!productId || !quantity || quantity <= 0) {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
     return res.status(400).json({
-      error: "productId and a positive quantity are required"
+      error: "Quantity must be a positive integer"
     });
   }
 
