@@ -142,7 +142,9 @@ for (const sf of sourceFiles) {
           condition,
           threshold,
           testedValues: testedValuesArray,
-          recommendation: `Condition '${condition}' in ${sf.filename} is only demonstrated at the threshold value (${threshold}). Values beyond the threshold are not exercised by the changed tests.`
+          recommendation: testedValuesArray.length === 0
+            ? `Condition '${condition}' in ${sf.filename} was detected, but no changed tests exercise this boundary at all.`
+            : `Condition '${condition}' in ${sf.filename} is only demonstrated at the threshold value (${threshold}). Values beyond the threshold are not exercised by the changed tests.`
         });
       }
     }
