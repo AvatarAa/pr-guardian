@@ -20,7 +20,8 @@ app.post("/analyze-pr", async (req, res) => {
 
     if (!url) {
       return res.status(400).json({
-        error: "Pull request URL is required"
+        error: "Pull request URL is required.",
+        code: "MISSING_URL"
       });
     }
 
@@ -30,7 +31,8 @@ app.post("/analyze-pr", async (req, res) => {
 
     if (!match) {
       return res.status(400).json({
-        error: "Invalid GitHub pull request URL"
+        error: "URL does not match a GitHub pull request (expected: github.com/owner/repo/pull/N).",
+        code: "INVALID_URL"
       });
     }
 
@@ -191,10 +193,42 @@ for (const sf of sourceFiles) {
     });
 
   } catch (error) {
-    console.error(error.message);
+    const status = error.response?.status;
+    const rateLimitRemaining = error.response?.headers?.["x-ratelimit-remaining"];
+    const isRateLimited = status === 429 || rateLimitRemaining === "0";
 
+    if (status === 404) {
+      return res.status(404).json({
+        error: "Pull request not found. Check that the repository is public and the PR number is correct.",
+        code: "GITHUB_NOT_FOUND"
+      });
+    }
+
+    if (isRateLimited) {
+      return res.status(429).json({
+        error: "GitHub API rate limit exceeded. Try again later or provide an authenticated token.",
+        code: "GITHUB_RATE_LIMITED"
+      });
+    }
+
+    if (status === 403) {
+      return res.status(403).json({
+        error: "GitHub API access denied. The repository may be private or a token with repo scope is required.",
+        code: "GITHUB_FORBIDDEN"
+      });
+    }
+
+    if (status) {
+      return res.status(502).json({
+        error: `GitHub API returned an unexpected error (HTTP ${status}).`,
+        code: "GITHUB_API_ERROR"
+      });
+    }
+
+    console.error(error.message);
     res.status(500).json({
-      error: "Failed to analyze pull request"
+      error: "An unexpected error occurred while analyzing the pull request.",
+      code: "INTERNAL_ERROR"
     });
   }
 });
