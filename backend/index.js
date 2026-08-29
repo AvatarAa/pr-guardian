@@ -99,6 +99,54 @@ if (sourceFiles.length > 0 && testFiles.length === 0) {
   coverageSignals.push("Test files changed without any production source changes.");
 }
 
+const reviewFindings = [];
+
+const allTestedValues = new Set();
+for (const tf of testFiles) {
+  const patch = tf.patch || "";
+  for (const line of patch.split("\n")) {
+    if (!line.startsWith("+")) continue;
+    const m = line.match(/\bquantity\s*:\s*(\d+)/);
+    if (m) allTestedValues.add(Number(m[1]));
+  }
+}
+const testedValuesArray = Array.from(allTestedValues).sort((a, b) => a - b);
+
+const boundaryRe = /\b(quantity|price|count|amount|total)\b[^=\n]*([><!]=?)\s*(\d+)/g;
+
+for (const sf of sourceFiles) {
+  const patch = sf.patch || "";
+  for (const line of patch.split("\n")) {
+    if (!line.startsWith("+")) continue;
+    boundaryRe.lastIndex = 0;
+    let m;
+    while ((m = boundaryRe.exec(line)) !== null) {
+      const operator = m[2];
+      const threshold = Number(m[3]);
+      const condition = `${m[1]} ${operator} ${threshold}`;
+      let gap = false;
+      if ((operator === ">=" || operator === ">") &&
+          !testedValuesArray.some((v) => v > threshold)) {
+        gap = true;
+      }
+      if ((operator === "<=" || operator === "<") &&
+          !testedValuesArray.some((v) => v < threshold)) {
+        gap = true;
+      }
+      if (gap) {
+        reviewFindings.push({
+          filename: sf.filename,
+          type: "boundary-gap",
+          condition,
+          threshold,
+          testedValues: testedValuesArray,
+          recommendation: `Condition '${condition}' in ${sf.filename} is only demonstrated at the threshold value (${threshold}). Values beyond the threshold are not exercised by the changed tests.`
+        });
+      }
+    }
+  }
+}
+
     res.json({
       title: pr.title,
       number: pr.number,
@@ -129,6 +177,8 @@ if (sourceFiles.length > 0 && testFiles.length === 0) {
         changedTestFiles: testFiles.map((f) => f.filename),
         signals: coverageSignals
       },
+
+      reviewFindings,
 
       files: files.map((file) => ({
         filename: file.filename,
