@@ -52,7 +52,11 @@ app.post("/orders", (req, res) => {
     });
   }
 
-  const total = product.price * quantity;
+  let total = product.price * quantity;
+
+if (quantity >= 3) {
+  total = total * 0.9;
+}
 
   const order = {
     id: orders.length + 1,
