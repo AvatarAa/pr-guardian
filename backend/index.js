@@ -8,6 +8,10 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+const githubConfig = process.env.GITHUB_TOKEN
+  ? { headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } }
+  : {};
+
 app.get("/", (req, res) => {
   res.json({
     message: "PR Guardian backend is running"
@@ -41,11 +45,13 @@ app.post("/analyze-pr", async (req, res) => {
     const pullNumber = match[3];
 
     const prResponse = await axios.get(
-      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`,
+      githubConfig
     );
 
     const filesResponse = await axios.get(
-      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files`
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files`,
+      githubConfig
     );
 
     const pr = prResponse.data;
