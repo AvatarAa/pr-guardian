@@ -2,6 +2,9 @@ import { useState } from "react";
 import "./App.css";
 import primoLogo from "./assets/primo-logo.png";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:4000";
+
 function App() {
   const [prUrl, setPrUrl] = useState("");
   const [result, setResult] = useState(null);
@@ -19,7 +22,7 @@ function App() {
       setError("");
       setResult(null);
 
-      const response = await fetch("http://localhost:4000/analyze-pr", {
+      const response = await fetch(`${API_URL}/analyze-pr`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
